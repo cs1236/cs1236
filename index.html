@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>指尖传情 ❤</title>
+    <style>
+        * {
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #ffe6f2;
+            font-family: '微软雅黑';
+            overflow: hidden;
+        }
+
+        #game-area {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+        }
+
+        .heart {
+            position: absolute;
+            font-size: 30px;
+            user-select: none;
+            animation: pulse 1s infinite;
+        }
+
+        .score-board {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(255,105,180,0.9);
+            padding: 10px 20px;
+            border-radius: 20px;
+            color: white;
+            z-index: 100;
+        }
+
+        .couple-btn {
+            position: fixed;
+            bottom: 30px;
+            width: 80%;
+            left: 10%;
+            padding: 15px;
+            background: #ff69b4;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            touch-action: none;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* 手机横屏提示 */
+        @media (orientation: landscape) {
+            #rotate-tip {
+                display: block;
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.9);
+                color: white;
+                text-align: center;
+                padding-top: 30vh;
+                z-index: 999;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="score-board">
+        爱心值: <span id="score">0</span>
+    </div>
+    
+    <div id="game-area"></div>
+    
+    <button class="couple-btn" ontouchstart="startCombine()" 
+            ontouchend="endCombine()">长按传递心意</button>
+
+    <div id="rotate-tip" style="display:none;">
+        ❤ 请将手机转为竖屏体验最佳效果 ❤
+    </div>
+
+    <script>
+        // 游戏数据
+        let gameData = {
+            score: 0,
+            combo: 0,
+            lastTap: 0
+        };
+
+        // 初始化
+        function init() {
+            loadProgress();
+            spawnHearts();
+            setInterval(checkCombo, 1000);
+        }
+
+        // 生成随机爱心
+        function spawnHearts() {
+            const colors = ['#ff69b4', '#ff1493', '#ff007f'];
+            const gameArea = document.getElementById('game-area');
+            
+            for(let i=0; i<5; i++) {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.innerHTML = '❤';
+                heart.style.color = colors[Math.floor(Math.random()*3)];
+                heart.style.left = Math.random()*80 + 'vw';
+                heart.style.top = Math.random()*70 + 'vh';
+                
+                heart.ontouchstart = (e) => {
+                    e.preventDefault();
+                    collectHeart(heart);
+                };
+                
+                gameArea.appendChild(heart);
+            }
+        }
+
+        // 收集爱心
+        function collectHeart(element) {
+            gameData.score++;
+            gameData.combo++;
+            updateScore();
+            
+            element.style.animation = 'none';
+            element.style.transform = 'scale(2)';
+            setTimeout(() => element.remove(), 200);
+        }
+
+        // 双人合击
+        let combineTimer;
+        function startCombine() {
+            combineTimer = setTimeout(() => {
+                gameData.score += 10;
+                createFirework();
+                updateScore();
+            }, 2000);
+        }
+
+        function endCombine() {
+            clearTimeout(combineTimer);
+        }
+
+        // 连击系统
+        function checkCombo() {
+            if(gameData.combo > 0) {
+                gameData.score += gameData.combo;
+                gameData.combo = 0;
+                updateScore();
+            }
+        }
+
+        // 烟花特效
+        function createFirework() {
+            for(let i=0; i<20; i++) {
+                const particle = document.createElement('div');
+                particle.innerHTML = '✨';
+                particle.style.position = 'absolute';
+                particle.style.left = '50vw';
+                particle.style.top = '70vh';
+                particle.style.transform = `translate(
+                    ${Math.random()*100-50}vw,
+                    ${Math.random()*100-70}vh
+                )`;
+                document.body.appendChild(particle);
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        // 进度保存
+        function saveProgress() {
+            localStorage.setItem('loveGame', JSON.stringify(gameData));
+        }
+
+        function loadProgress() {
+            const saved = localStorage.getItem('loveGame');
+            if(saved) gameData = JSON.parse(saved);
+            document.getElementById('score').textContent = gameData.score;
+        }
+
+        // 更新分数
+        function updateScore() {
+            document.getElementById('score').textContent = gameData.score;
+            saveProgress();
+        }
+
+        // 初始化游戏
+        init();
+
+        // 防止页面滚动
+        document.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        }, { passive: false });
+
+        // 横屏提示
+        window.addEventListener('orientationchange', () => {
+            document.getElementById('rotate-tip').style.display = 
+                (window.orientation % 180 === 0) ? 'none' : 'block';
+        });
+
+const missions = [
+    { target: 50, reward: 100, text: "每日签到" },
+    { target: 100, reward: 200, text: "爱心达人" }
+];
+
+function checkMissions() {
+    missions.forEach(mission => {
+        if(gameData.score >= mission.target) {
+            alert(`任务完成：${mission.text}！获得${mission.reward}爱心值`);
+            gameData.score += mission.reward;
+            updateScore();
+        }
+    });
+}
+// 在updateScore()中调用
+
+function collectHeart() {
+    // 手机振动反馈
+    if(navigator.vibrate) {
+        navigator.vibrate([30]);
+    }
+    //...
+}
+
+// 语音留言功能
+let audioChunks = [];
+
+function startRecording() {
+    navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+        const recorder = new MediaRecorder(stream);
+        recorder.start();
+        
+        recorder.ondataavailable = e => {
+            audioChunks.push(e.data);
+        };
+        
+        setTimeout(() => {
+            recorder.stop();
+            const audioBlob = new Blob(audioChunks);
+            const audioUrl = URL.createObjectURL(audioBlob);
+            saveAudio(audioUrl);
+        }, 5000);
+    });
+}
+
+function saveAudio(url) {
+    localStorage.setItem('loveVoice', url);
+}
+// 使用手机摄像头
+const AROverlay = document.createElement('div');
+AROverlay.style = 'position:fixed; top:0; left:0; width:100%; height:100%;';
+
+function startAR() {
+    navigator.mediaDevices.getUserMedia({ video: true })
+    .then(stream => {
+        AROverlay.innerHTML = `
+            <video autoplay style="width:100%; height:100%;">
+                <canvas id="ar-canvas"></canvas>
+            </video>
+        `;
+        document.body.appendChild(AROverlay);
+        addARHearts();
+    });
+}
+
+function addARHearts() {
+    // 在视频画面上叠加爱心
+}
+
+    </script>
+</body>
+</html>
